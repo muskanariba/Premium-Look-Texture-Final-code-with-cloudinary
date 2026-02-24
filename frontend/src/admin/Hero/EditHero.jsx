@@ -162,6 +162,13 @@ export default function EditHero() {
   const [newImage, setNewImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Helper to build correct image URL
+  const buildImageUrl = (img) => {
+    if (!img) return "";
+    if (img.startsWith("http://") || img.startsWith("https://")) return img;
+    return `${API_URL.replace("/api", "")}/uploads/${img.replace(/^\/+/, "")}`;
+  };
+
   // Load hero data
   useEffect(() => {
     const loadHero = async () => {
@@ -170,37 +177,30 @@ export default function EditHero() {
         const data = await res.json();
 
         if (data.success) {
-          const heroItem = data.hero.find(h => h._id === id);
+          const heroItem = data.hero.find((h) => h._id === id);
           if (heroItem) setForm(heroItem);
         }
       } catch (err) {
         console.error("Error loading hero:", err);
       }
     };
-
     loadHero();
   }, [id, API_URL]);
 
-  const handleChange = e =>
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   // Update hero
-  const handleUpdate = async e => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const fd = new FormData();
-
-      Object.keys(form).forEach(key => {
-        if (key !== "bgImage") {
-          fd.append(key, form[key]);
-        }
+      Object.keys(form).forEach((key) => {
+        if (key !== "bgImage") fd.append(key, form[key]);
       });
-
-      if (newImage) {
-        fd.append("bgImage", newImage);
-      }
+      if (newImage) fd.append("bgImage", newImage);
 
       const res = await fetch(`${API_URL}/hero/update/${id}`, {
         method: "PUT",
@@ -208,10 +208,7 @@ export default function EditHero() {
       });
 
       const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Server error");
-      }
+      if (!res.ok || !data.success) throw new Error(data.message || "Server error");
 
       alert("Hero updated successfully");
       navigate("/admin/hero");
@@ -228,15 +225,9 @@ export default function EditHero() {
     if (!window.confirm("Are you sure you want to delete this hero?")) return;
 
     try {
-      const res = await fetch(`${API_URL}/hero/delete/${id}`, {
-        method: "DELETE",
-      });
-
+      const res = await fetch(`${API_URL}/hero/delete/${id}`, { method: "DELETE" });
       const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Delete failed");
-      }
+      if (!res.ok || !data.success) throw new Error(data.message || "Delete failed");
 
       alert("Hero deleted successfully");
       navigate("/admin/hero");
@@ -281,16 +272,19 @@ export default function EditHero() {
           {/* Show existing image */}
           {form.bgImage && (
             <img
-              src={`${API_URL}/${form.bgImage}`}
+              src={buildImageUrl(form.bgImage)}
               className="w-full h-40 object-cover rounded"
               alt="Hero"
+              onError={(e) =>
+                (e.currentTarget.src = "https://placehold.co/400x200?text=Not+Found")
+              }
             />
           )}
 
           <input
             type="file"
             accept="image/*"
-            onChange={e => setNewImage(e.target.files[0])}
+            onChange={(e) => setNewImage(e.target.files[0])}
           />
 
           <button
